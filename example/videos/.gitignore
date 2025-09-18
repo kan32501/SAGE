@@ -1,0 +1,10 @@
+*
+!.gitignore
+!/turtle/
+!/turtle/** 
+!/tiger/
+!/tiger/** 
+!/f1/
+!/f1/** 
+!/surf/
+!/surf/** 
