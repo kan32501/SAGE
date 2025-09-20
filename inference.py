@@ -2,7 +2,6 @@ from utils.file_io import *
 from utils.eval_models import *
 from utils.image_operations import *
 from utils.line_operations import *
-from utils.optical_flow import *
 from utils.visualization import *
 from utils.baselines import *
 
@@ -118,5 +117,5 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
 
     # export and save generated inbetween frames as MP4
     out_mp4_path = os.path.join(curr_trial_dir, 'transition.mp4')
-    pngs_to_mp4(out_frames_dir, out_mp4_path, framerate=30)
+    pngs_to_mp4(out_frames_dir, out_mp4_path)
     print("–– OUTPUT TRANSITION MP4 SAVED IN " + out_mp4_path + " ––")

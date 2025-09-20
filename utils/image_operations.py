@@ -3,7 +3,6 @@ import cv2
 from PIL import Image, ImageOps
 import numpy as np
 import seaborn as sns
-from models.gluestick.drawing import plot_color_line_matches_opencv
 import subprocess
 
 def crop_and_resize(image, size=(1024, 576)):
@@ -420,7 +419,7 @@ def plot_lines(image, fg_lines, lw, black=True):
 
     # choose color palette for lines
     n = fg_lines.shape[0]
-    line_colors = sns.color_palette(n_colors=n)
+    line_colors = sns.color_palette('husl', n_colors=n)
 
     # plot each line segment in foreground
     for i in range(n):
@@ -473,44 +472,7 @@ def plot_condition_imgs(image, interped_lines_fg, lw=2, save=True, out_dir=None,
 
     return condition_images
 
-def plot_condition_imgs_base(image, interped_lines, lw=1, save=True, out_dir=None, black=True):
-    """
-    Plot the interpolated lines onto black images
-
-    Args
-        image (PIL.Image) : base image 
-        interped_lines (List[np.array]) : list of interpolated lines
-        lw (int) : line width on image. default is 1
-
-    Returns
-        conditions_images (List[PIL.Image]) : list of framewise conditions as images
-    """
-    # convert images to numpy arrays
-    image_np = np.asarray(image)
-
-    # get number of frames
-    num_frames = len(interped_lines)
-    
-    # if there are no matched lines, add all black images
-    if interped_lines is None:
-        img = np.zeros_like(image_np) if black else np.ones_like(image_np) * 255
-        conditions_images = []
-        for i in range(num_frames + 2):
-            conditions_images.append(img)
-        return conditions_images
-
-    conditions_images = plot_color_line_matches_opencv(image_np, interped_lines, lw=lw, save_path=False, number=False)
-    conditions_images = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in conditions_images]
-
-    if save:
-        num_imgs = len(conditions_images)
-        for i in range(num_imgs):
-            conditions_image_PIL = Image.fromarray(conditions_images[i])
-            conditions_image_PIL.save(os.path.join(out_dir, 'condition{:02d}.png'.format(i)))
-
-    return conditions_images
-
-def pngs_to_mp4(input_dir, output_file, framerate):
+def pngs_to_mp4(input_dir, output_file, framerate=24):
     """
     Convert PNG sequence to MP4 video using ffmpeg.
 

@@ -324,13 +324,19 @@ def interp_lines_spline(linesA, linesB, maskA, maskB, flowA, flowB, num_frames, 
     interpolated_bbox_length = bbox_length1 + (bbox_length2 - bbox_length1) * np.linspace(0, 1, num_frames)
 
     # Now start to interpolate each line inside the bbox
-    # First the angle
+    # First get the angle
     dir1 = linesA[:, 1] - linesA[:, 0]
     dir1 = dir1 / np.linalg.norm(dir1, axis=1, keepdims=True)
     dir1[dir1[..., 0] < 0] = -dir1[dir1[..., 0] < 0]
     dir2 = linesB[:, 1] - linesB[:, 0]
     dir2 = dir2 / np.linalg.norm(dir2, axis=1, keepdims=True)
     dir2[dir2[..., 0] < 0] = -dir2[dir2[..., 0] < 0]
+
+    # make the lines rotate minimally - angle invariance for endpoint ordering
+    dot_product = np.sum(dir1 * dir2, axis=1)
+    dir2[dot_product < 0] = -dir2[dot_product < 0]
+
+    # compute the standardized angle
     angle1 = np.arctan2(dir1[:, 1], dir1[:, 0])
     angle2 = np.arctan2(dir2[:, 1], dir2[:, 0])
     interpolated_angle = angle1 + (angle2 - angle1) * np.linspace(0, 1, num_frames)[:, None]

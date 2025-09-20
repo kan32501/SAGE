@@ -40,7 +40,7 @@ def plot_flow(image, points, flow, magnitude=100.0):
     flow_image = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     return flow_image
 
-def plot_lines(image, lines, extend_lines=False, color=True, number=True):
+def plot_lines(image, lines, color=True, number=True):
     """
     Plot lines onto an image
 
@@ -48,6 +48,7 @@ def plot_lines(image, lines, extend_lines=False, color=True, number=True):
         image (PIL.Image): The input image to paint
         lines (np.array): size (n, 2, 2). [[x_a, y_a] , [x_b, y_b]] line segments to plot
         color (bool) : color each line differently
+        number (bool) : number each line by index
     Returns:
         line_image (PIL.Image): The image with lines plotted
     """
@@ -63,10 +64,6 @@ def plot_lines(image, lines, extend_lines=False, color=True, number=True):
         # get endpoints
         pt1, pt2 = tuple(map(int, lines[i][0])), tuple(map(int, lines[i][1]))
         midpoint = ((pt1[0] + pt2[0]) / 2, (pt1[1] + pt2[1]) / 2)
-
-        # extend lines if needed
-        if extend_lines:
-            pt1, pt2 = get_extended_endpoints(lines[i], midpoint, image.width, image.height)
 
         # plot line
         color = (line_colors[i][2] * 255, line_colors[i][1] * 255, line_colors[i][0] * 255) if color else (255, 0, 0)
@@ -156,8 +153,8 @@ def visualize_lines(height, width,
         imgN = apply_mask(imgN, frameN_mask)
 
     # plot line segments, colored
-    img0_lines_colored = plot_lines(img0, matched_lines0, extend_lines=False, color=True, number=False)
-    imgN_lines_colored = plot_lines(imgN, matched_linesN, extend_lines=False, color=True, number=False)
+    img0_lines_colored = plot_lines(img0, matched_lines0, color=True, number=False)
+    imgN_lines_colored = plot_lines(imgN, matched_linesN, color=True, number=False)
     img0_lines_colored.save(os.path.join(output_dir, "frame0_lines_colored.png"))
     imgN_lines_colored.save(os.path.join(output_dir, "frameN_lines_colored.png"))
 
@@ -169,8 +166,8 @@ def visualize_lines(height, width,
     imgN_lines_colored_midpts.save(os.path.join(output_dir, "frameN_lines_colored_midpts.png"))
 
     # plot line segments, colored, numbered
-    img0_lines_colored_numbered = plot_lines(img0, matched_lines0, extend_lines=False, color=True, number=True)
-    imgN_lines_colored_numbered = plot_lines(imgN, matched_linesN, extend_lines=False, color=True, number=True)
+    img0_lines_colored_numbered = plot_lines(img0, matched_lines0, color=True, number=True)
+    imgN_lines_colored_numbered = plot_lines(imgN, matched_linesN, color=True, number=True)
     img0_lines_colored_numbered.save(os.path.join(output_dir, "frame0_lines_colored_numbered.png"))
     imgN_lines_colored_numbered.save(os.path.join(output_dir, "frameN_lines_colored_numbered.png"))
 
