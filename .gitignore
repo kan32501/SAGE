@@ -8,3 +8,4 @@ models/SEARAFT/models/Tartan-C-T-TSKH-kitti432x960-M.pth
 !/readme_results/
 !/readme_results/** 
 .vscode/
+*.pyc
