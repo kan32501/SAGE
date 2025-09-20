@@ -135,83 +135,6 @@ def normalize_lines_by_mask(mask, lines):
 
     return lines_normalized
 
-def greedy_match_lines(norm_hough0, norm_houghN, norm_midpoints0, norm_midpointsN, with_flow, flow0_midpts=None, flowN_midpts=None):
-    """
-    Greedily match the lines based on lowest L2 DISTANCE of
-
-    - theta
-    - normalized midpoint (x, y)
-    - normalized optical flow
-
-    Calculate the L2 distance in R^4 space and produce a 1:1 mapping
-
-    Args
-        norm_hough0 (np.array) : size (n_lines, 1, 2) [rho, theta] pairs for frame0, based on normalized lines
-        norm_houghN (np.array) : size (n_lines, 1, 2) [rho, theta] pairs for frameN, based on normalized lines
-        norm_midpoints0 (np.array) : size (n_points, 1, 2) midpoints for frame0, normalized by mask
-        norm_midpointsN (np.array) : size (n_points, 1, 2) midpoints for frameN, normalized by mask
-        flow0_midpts (np.array) : size (n_points, 1, 2) [x, y] optical flow for frame0 at midpoints
-        flow0_midpts (np.array) : size (n_points, 1, 2) [x, y] optical flow for frameN at midpoints
-
-    Returns
-        matched_indices0 (np.array) : size (min_lines,) indices of the matched lines
-        matched_indicesN (np.array) : size (min_lines,) indices of the matched lines
-    """
-    # get number of lines from both
-    n_lines0 = norm_hough0.shape[0]
-    n_linesN = norm_houghN.shape[0]
-
-    # the set of lines with less lines chooses
-    min_lines = min(n_lines0, n_linesN)
-
-    # initialize matched lines list & all other parameters
-    matched_indicesA = np.zeros(shape=(min_lines,), dtype=np.uint8)
-    matched_indicesB = np.zeros(shape=(min_lines,), dtype=np.uint8)
-
-    if not with_flow:
-        # concatenate the hough line parameters [THETA ONLY IN INDEX 1] and the midpoints
-        line_paramsA = np.concatenate((np.expand_dims(norm_hough0[:, :, 1], axis=2), norm_midpoints0), axis=2) if n_lines0 < n_linesN else np.concatenate((np.expand_dims(norm_houghN[:, :, 1], axis=2), norm_midpointsN), axis=2)
-        line_paramsB = np.concatenate((np.expand_dims(norm_houghN[:, :, 1], axis=2), norm_midpointsN), axis=2) if n_lines0 < n_linesN else np.concatenate((np.expand_dims(norm_hough0[:, :, 1], axis=2), norm_midpoints0), axis=2)
-    else:
-        # concatenate the midpoints of the line with the optical flow
-        line_paramsA = np.concatenate((norm_midpoints0, flow0_midpts), axis=2) if n_lines0 < n_linesN else np.concatenate((norm_midpointsN, flowN_midpts), axis=2)
-        line_paramsB = np.concatenate((norm_midpointsN, flowN_midpts), axis=2) if n_lines0 < n_linesN else np.concatenate((norm_midpoints0, flow0_midpts), axis=2)
-
-    # shuffle the order of the indices so that each line has an equal chance of choosing first
-    rand_indices = np.arange(min_lines)
-    np.random.shuffle(rand_indices)
-
-    # for each line in the frame0, match to the closest line in the second image
-    for i in range(min_lines):
-        # get random index
-        rand_index = rand_indices[i]
-
-        # bookkeep the random index
-        matched_indicesA[i] = rand_index
-
-        # get the line as a point in R^4 space
-        linesA_i = line_paramsA[rand_index]
-
-        # compute the squared distances from this "point" in R^4 to all the line "points" in R^4 from frameN
-        L2dists = np.square(np.linalg.norm(line_paramsB - linesA_i, axis=2)) # numpy.linalg.norm along the row
-
-        # get the line in imageB that has the minimum distance to the current line in frame0
-        matchB_i = np.argmin(L2dists) # index of min. dist line
-
-        # bookkeep the matched line and its parameters
-        matched_indicesB[i] = matchB_i
-        
-        # **NOTE: what if it's not greedy ???
-        # remove the matched line from the options by setting the parameter entries to 0
-        # (this removes the need to resize the numpy arrays and deal with changed indices)
-        line_paramsB[matchB_i, :, :] = np.inf
-        
-    # return the matching
-    if n_lines0 < n_linesN:
-        return matched_indicesA, matched_indicesB
-    else:
-        return matched_indicesB, matched_indicesA
-
 def match_lines_optim(norm_midpoints0, norm_midpointsN):
     """
     Match the lines based on lowest L2 DISTANCE of midpoints (x, y), normalized with respect to the mask bounding box
@@ -305,9 +228,14 @@ def interp_lines_spline(linesA, linesB, maskA, maskB, flowA, flowB, num_frames, 
     Args
         linesA (np.array) : size (n_lines, 2, 2), lines in start frame, matched by index
         linesB (np.array) : size (n_lines, 2, 2), lines in end frame, matched by index
+        maskA (PIL.Image) : PIL Image binary mask for start frame, type "1"
+        maskB (PIL.Image) : PIL Image binary mask for end frame, type "1"
+        flowA (np.array) : size (H, W, 2), optical flow for start frame
+        flowB (np.array) : size (H, W, 2), optical flow for end frame
+        num_frames (int) : # of interpolated frames to generate
 
-        INCOMPLETE
-
+    Returns
+        interped_lines (list) : list of framewise pose/edge conditions as numpy arrays, size (n_lines, 2, 2)
     """
     # convert masks to numpy
     maskA = np.round(np.asarray(maskA)).astype(np.uint8)
@@ -331,20 +259,15 @@ def interp_lines_spline(linesA, linesB, maskA, maskB, flowA, flowB, num_frames, 
 
     # Gather pixel flow according to the mask
     # flow_norm = flows / (np.linalg.norm(flows, axis=-1, keepdims=True) + 1e-6)
-    # flows1 = flows[0, np.nonzero(maskA)[0], np.nonzero(maskA)[1]]  # (N, 2)
-    # flows2 = flows[-1, np.nonzero(maskB)[0], np.nonzero(maskB)[1]]
+    flows1 = flowA[np.where(maskA)[0], np.where(maskA)[1]]  # (N, 2)
+    flows2 = flowB[np.where(maskB)[0], np.where(maskB)[1]]
 
-    # flows1 = flow_norm[0, centers1[:,1].astype(np.int64), centers1[:,0].astype(np.int64)]  # (N, 2)
-    # flows2 = flow_norm[-1, centers2[:,1].astype(np.int64), centers2[:,0].astype(np.int64)]
-
-    # NOTE: FIX
-    flows1 = flowA[np.where(maskA==1)[0], np.where(maskA==1)[1]]  # (N, 2)
-    flows2 = flowB[np.where(maskB==1)[0], np.where(maskB==1)[1]]  # (N, 2)
+    # normalize
+    flows1 = flows1 / (np.linalg.norm(flows1, axis=-1, keepdims=True) + 1e-6) 
+    flows2 = flows2 / (np.linalg.norm(flows2, axis=-1, keepdims=True) + 1e-6)
 
     avg_dir1 = flows1.reshape(-1, 2).mean(axis=0)
     avg_dir2 = flows2.reshape(-1, 2).mean(axis=0)
-    avg_dir1 = -avg_dir1 / np.linalg.norm(avg_dir1)
-    avg_dir2 = -avg_dir2 / np.linalg.norm(avg_dir2)
 
     # Visualize the bbox and direction
     if viz:
@@ -378,9 +301,8 @@ def interp_lines_spline(linesA, linesB, maskA, maskB, flowA, flowB, num_frames, 
         ax[2].arrow(bbox_center2[0], bbox_center2[1], avg_dir2[0] * 50, avg_dir2[1] * 50, color='red', width=2)
         # plt.imshow(maskA)
 
-
     point_seq = []
-    n_supporting = 10
+    n_supporting = 12
     for i in range(n_supporting):
         point_seq.append(bbox_center1 + avg_dir1 * i * 10)
     for i in range(n_supporting - 1, -1, -1):
@@ -441,8 +363,11 @@ def interp_lines_spline(linesA, linesB, maskA, maskB, flowA, flowB, num_frames, 
 
     return line_endpoints
 
-def filter_lines_in_mask(mask, lines):
+def filter_fg_lines(mask, lines, tolerance=15):
     """
+    Filter lines based on whether they are foreground or background with respect to a binary mask.
+    Give some tolerance to foreground lines so that the lines on the boundary are included
+
     Args:
         mask (PIL.Image, mode "1") : binary mask on source image
         lines (np.array) : size (n, 2, 2), lines in source image defined by endpoints
@@ -451,11 +376,12 @@ def filter_lines_in_mask(mask, lines):
         mask_lines (np.array) : size (x, 2, 2) lines in source image that are inside the mask
     """
     # convert mask to array of 0/1
-    mask_arr = np.array(mask, dtype=np.uint8) 
+    mask_arr = np.array(mask).astype(np.uint8)
     h, w = mask_arr.shape
 
     # check each line
-    valid_lines = []
+    fg_lines = []
+
     for line in lines:
         # extract coordinates
         (x1, y1), (x2, y2) = line.astype(int)
@@ -464,9 +390,20 @@ def filter_lines_in_mask(mask, lines):
         if not (0 <= x1 < w and 0 <= y1 < h and 0 <= x2 < w and 0 <= y2 < h):
             continue
 
-        # keep line only if both endpoints lie in mask
-        if mask_arr[y1, x1] == 1 and mask_arr[y2, x2] == 1:
-            valid_lines.append(line)
+        # return whether this pixel is within tolerance distance of a mask pixel
+        def pixel_in_tolerance(x, y):
+            # get square around the point with radius r=tolerance
+            min_x, max_x = max(0, x - tolerance), min(w - 1, x + tolerance)
+            min_y, max_y = max(0, y - tolerance), min(h - 1, y + tolerance)
+
+            # check if any pixel in this square is in the mask
+            return np.any(mask_arr[min_y:(max_y+1), min_x:(max_x+1)] == 1)
+
+        # determine if it is a foreground or background line
+        if pixel_in_tolerance(x1, y1) and pixel_in_tolerance(x2, y2):
+            fg_lines.append(line)
 
     # return filtered lines or empty array if none valid
-    return np.array(valid_lines) if valid_lines else np.empty((0, 2, 2), dtype=lines.dtype)
+    fg_lines = np.array(fg_lines) if fg_lines is not None else np.empty((0, 2, 2), dtype=lines.dtype)
+    
+    return fg_lines

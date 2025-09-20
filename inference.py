@@ -1,11 +1,10 @@
-from utils.file_io import init_results_dirs, extract_frames_from_mp4
+from utils.file_io import *
 from utils.eval_models import *
 from utils.image_operations import *
 from utils.line_operations import *
 from utils.optical_flow import *
 from utils.visualization import *
 from utils.baselines import *
-from diffusers.utils import export_to_video
 
 def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progress=True, visualize=True):
     # progress
@@ -13,7 +12,7 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
 
     # create a new numbered directory for this iterations in /results, with subfolders
     if visualize:
-        curr_trial_dir, inputs_dir, conditions_dir, out_frames_dir, fg_dir, bg_dir, all_dir, flow_dir = init_results_dirs(args.output_dir, visualize)
+        curr_trial_dir, inputs_dir, conditions_dir, out_frames_dir, lines_dir, flow_dir = init_results_dirs(args.output_dir, visualize)
     else:
         curr_trial_dir, inputs_dir, conditions_dir, out_frames_dir = init_results_dirs(args.output_dir, visualize)
 
@@ -33,25 +32,18 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
     if progress: 
         print("-> Lines detected")
 
-    # load foreground/background masks
-    frame0_mask = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=False)
-    frameN_mask = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=False)
-    frame0_mask_inv = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=False, invert=True)
-    frameN_mask_inv = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=False, invert=True)
-
     # infer optical flow with SEA-RAFT
     flow0, flowN = infer_SEARAFT(SEARAFT_model, args, frame0_prev, frame0, frameN, frameN_next)
 
-    # filter lines out by the foreground/background masks
-    lines0_fg = filter_lines_in_mask(frame0_mask, lines0)
-    linesN_fg = filter_lines_in_mask(frameN_mask, linesN)
-    lines0_bg = filter_lines_in_mask(frame0_mask_inv, lines0)
-    linesN_bg = filter_lines_in_mask(frameN_mask_inv, linesN)
+    # load foreground/background masks
+    frame0_mask = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=False)
+    frameN_mask = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=False)
+    frame0_mask_np = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=True)
+    frameN_mask_np = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=True)
 
-    # extract midpoints of raw lines for visualization
-    midpoints0_fg, midpointsN_fg = get_midpoints(lines0_fg), get_midpoints(linesN_fg)
-    midpoints0_bg, midpointsN_bg = get_midpoints(lines0_bg), get_midpoints(linesN_bg)
-
+    # filter lines out into foreground/background
+    lines0_fg, linesN_fg = filter_fg_lines(frame0_mask, lines0), filter_fg_lines(frameN_mask, linesN)
+    
     # normalize the foreground lines based on the mask bounding box (we don't normalize the background)
     norm_lines0_fg = normalize_lines_by_mask(frame0_mask, lines0_fg)
     norm_linesN_fg = normalize_lines_by_mask(frameN_mask, linesN_fg)
@@ -61,50 +53,37 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
 
     # run a cost minimization algorithm to optimally match lines based on position, for foreground + background
     matched_indices0_fg, matched_indicesN_fg = match_lines_optim(norm_midpoints0_fg, norm_midpointsN_fg)
-    matched_indices0_bg, matched_indicesN_bg = match_lines_optim(midpoints0_bg, midpointsN_bg)
-
+ 
     # reorder the lines and other parameters based on the matched indices
     matched_lines0_fg, matched_linesN_fg = lines0_fg[matched_indices0_fg], linesN_fg[matched_indicesN_fg]
-    matched_lines0_bg, matched_linesN_bg = lines0_bg[matched_indices0_bg], linesN_bg[matched_indicesN_bg]
+ 
+    # get midpoints (line positions) of the matched lines
     matched_midpoints0_fg, matched_midpointsN_fg = get_midpoints(matched_lines0_fg), get_midpoints(matched_linesN_fg)
-    matched_midpoints0_bg, matched_midpointsN_bg = get_midpoints(matched_lines0_bg), get_midpoints(matched_linesN_bg)
-
+ 
     # visualize the lines with midpoints, and optical flow field
     if visualize:
         # foreground
         visualize_lines(args.height, args.width,
                         matched_lines0_fg, matched_linesN_fg, 
                         matched_midpoints0_fg, matched_midpointsN_fg, 
-                        fg_dir, frame0_mask=None, frameN_mask=None) # can apply masks if needed
-        # background
-        visualize_lines(args.height, args.width,
-                        matched_lines0_bg, matched_linesN_bg, 
-                        matched_midpoints0_bg, matched_midpointsN_bg, 
-                        fg_dir, frame0_mask=None, frameN_mask=None) # can apply masks if needed
-        # all lines
-        # combine the matched lines within the masks + outside the masks
-        matched_lines0 = np.concatenate((matched_lines0_fg, matched_lines0_bg), axis=0)
-        matched_linesN = np.concatenate((matched_linesN_fg, matched_linesN_bg), axis=0)
-        visualize_lines(args.height, args.width,
-                        matched_lines0, matched_linesN, 
-                        matched_midpoints0_bg, matched_midpointsN_bg, 
-                        all_dir, frameN_mask=frame0_mask_inv)
+                        lines_dir, frame0_mask=None, frameN_mask=None) # can apply masks if desired
 
         # visualize optical flow field
         visualize_flow_field(flow0, os.path.join(flow_dir, "frame0_flow.png"), scale=1.0)
         visualize_flow_field(flowN, os.path.join(flow_dir, "frameN_flow.png"), scale=1.0)
 
     # interpolate the detected lines using spline trajectories
-    mask1 = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=True)
-    mask2 = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=True)
-    mask1_inv = load_mask(args.frame0_mask_path, args.width, args.height, as_numpy=True, invert=True)
-    mask2_inv = load_mask(args.frameN_mask_path, args.width, args.height, as_numpy=True, invert=True)
-    interped_lines_fg = interp_lines_spline(matched_lines0_fg, matched_linesN_fg, mask1, mask2, flow0, flowN, num_frames=args.frame_count)
-    interped_lines_bg = interp_lines_spline(matched_lines0_bg, matched_linesN_bg,  mask1_inv, mask2_inv, flow0, flowN, num_frames=args.frame_count)
+    interped_lines_fg = interp_lines_spline(matched_lines0_fg, matched_linesN_fg, frame0_mask_np, frameN_mask_np, flow0, flowN, num_frames=args.frame_count)
 
     # generate c1-c2, the frame-wise conditions
-    framewise_cond_imgs = plot_condition_imgs_fg_priority(frame0, interped_lines_fg, interped_lines_bg, 
-                                                          lw=2, save=True, out_dir=conditions_dir, black=True) 
+    framewise_cond_imgs = plot_condition_imgs(frame0, interped_lines_fg, lw=2, save=True, out_dir=conditions_dir, black=True)
+    if visualize:
+        conditions = [framewise_cond_imgs[0]] + [framewise_cond_imgs[0]] + framewise_cond_imgs + [framewise_cond_imgs[-1]] + [framewise_cond_imgs[-1]]
+        # make images into gif and save
+        gif_path = os.path.join(curr_trial_dir, 'conditions.gif')
+        duration = 100 # if not bef_and_aft else 150
+        conditions[0].save(gif_path, save_all=True, append_images=conditions[1:], loop=0, duration=duration)
+
     # progress update
     if progress: print("-> Generated frame-wise conditions")
 
@@ -131,13 +110,13 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
     inbetween_frames = [img for sublist in video_frames for img in sublist]
 
     # save generated inbetween frames as PNGs and as a gif in results/xxx/out_frames
-    out_gif_path, out_frames = save_out_frames(inbetween_frames, 
-                                               "morphwarp", out_frames_dir, curr_trial_dir,
+    out_gif_path = save_out_frames(inbetween_frames, 
+                                               "transition", out_frames_dir, curr_trial_dir,
                                                video0_frames_dir=args.video0_frames_dir, videoN_frames_dir=args.videoN_frames_dir,
                                                width=args.width, height=args.height)
     print("–– OUTPUT TRANSITION GIF SAVED IN " + out_gif_path + " ––")
 
     # export and save generated inbetween frames as MP4
-    out_mp4_path = os.path.join(curr_trial_dir, 'morphwarp.mp4')
-    export_to_video(out_frames, out_mp4_path)
+    out_mp4_path = os.path.join(curr_trial_dir, 'transition.mp4')
+    pngs_to_mp4(out_frames_dir, out_mp4_path, framerate=30)
     print("–– OUTPUT TRANSITION MP4 SAVED IN " + out_mp4_path + " ––")

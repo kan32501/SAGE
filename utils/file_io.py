@@ -44,18 +44,14 @@ def init_results_dirs(output_dir, visualize):
     # for visualizations only
     if visualize:
         visuals_dir = trial_dir + "/visuals"
-        fg_dir = visuals_dir + "/lines_fg"
-        bg_dir = visuals_dir + "/lines_bg"
-        all_dir = visuals_dir + "/lines_all"
+        lines_dir = visuals_dir + "/lines"
         flow_dir = visuals_dir + "/flow_field"
         if not os.path.exists(visuals_dir): os.mkdir(visuals_dir)
-        if not os.path.exists(fg_dir): os.mkdir(fg_dir)
-        if not os.path.exists(bg_dir): os.mkdir(bg_dir)
-        if not os.path.exists(all_dir): os.mkdir(all_dir)
+        if not os.path.exists(lines_dir): os.mkdir(lines_dir)
         if not os.path.exists(flow_dir): os.mkdir(flow_dir)
 
     if visualize:
-        return trial_dir, input_dir, conditions_dir, out_frames_dir, fg_dir, bg_dir, all_dir, flow_dir
+        return trial_dir, input_dir, conditions_dir, out_frames_dir, lines_dir, flow_dir
     else:
         return trial_dir, input_dir, conditions_dir, out_frames_dir
 

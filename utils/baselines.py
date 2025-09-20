@@ -7,7 +7,7 @@ Return num_frames + 2 frames that gradually cross dissolve between two input fra
 a linear weightage parameter, alpha.
 
 Args
-    image0 (PIL.Image) : start image as a PIL Image object
+    frame0 (PIL.Image) : start image as a PIL Image object
     imageN (PIL.Image) : end image as a PIL Image object
     num_frames (int) : the number of inbetween frames
     width (int) : width of the frames
@@ -17,10 +17,10 @@ Returns
     x_dissolve_frames (List[PIL.Image]) : 
 
 """
-def cross_dissolve(image0, imageN, num_frames, width, height):
+def cross_dissolve(frame0, frameN, num_frames, width, height):
     # convert images to numpy arrays
-    image0_np = np.asarray(image0.resize((width, height)))
-    imageN_np = np.asarray(imageN.resize((width, height)))
+    image0_np = np.asarray(frame0.resize((width, height)))
+    imageN_np = np.asarray(frameN.resize((width, height)))
 
     # initialize cross dissolved frames
     x_dissolved_frames = []

@@ -18,11 +18,11 @@ def parse_args():
     # height and width of the transition frames
     parser.add_argument("--height",
                             type=int,
-                            default=1024
+                            default=576
                         )
     parser.add_argument("--width",
                             type=int,
-                            default=576
+                            default=1024
                         )
     
     # number of inbetween frames to generate
@@ -34,23 +34,23 @@ def parse_args():
     # input video frames' directories
     parser.add_argument("--video0_frames_dir", 
                         type=str, 
-                        default="./example/videos/3A_piste"
+                        default="./example/videos/cab"
                         )
     parser.add_argument("--videoN_frames_dir", 
                         type=str, 
-                        default="./example/videos/5B_skatepark"
+                        default="./example/videos/train"
                         )
 
     # start frame mask from videoA
     parser.add_argument("--frame0_mask_path", 
-                        type=str, 
-                        default="./example/masks/3A_piste-45_mask.png"
+                        type=str,
+                        default="./example/masks/cab_mask.png"
                         )
     
     # end frame mask from videoB
     parser.add_argument("--frameN_mask_path", 
                         type=str, 
-                        default="./example/masks/5B_skatepark-0_mask.png"
+                        default="./example/masks/train_mask.png"
                         )
 
     # assign the arguments to objects in the parser in one go

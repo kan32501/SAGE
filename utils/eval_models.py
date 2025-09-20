@@ -10,10 +10,10 @@ Run SEA-RAFT. Copied code from demo_custom in SEA-RAFT/custom.py
 Args:
     path : path to save the jpg results in
     model (nn.Module) : the SEA-RAFT module
-    frame0_prev (PIL.Image) : frame preceding frame0, PIL Image
+    frame0_prev (PIL.Image) : frame preceding frame0 for flow, PIL Image
     frame0 (PIL.Image) : frame0, PIL Image
     frameN (PIL.Image) : frameN, PIL Image
-    frameN_next(PIL.Image) : frame following frameN, PIL Image
+    frameN_next(PIL.Image) : frame following frameN for flow, PIL Image
     device : GPU device. default is torch.device('cuda')
 
 Returns:
@@ -79,27 +79,6 @@ def infer_gluestick(model, frame0, frameN, device=torch.device('cuda')):
 
     # convert (nested) model output to np arrays
     pred = batch_to_np(pred)
-
-    # extract the outputs from prediction
-    kp0, kpN = pred["keypoints0"], pred["keypoints1"] # extract keypoints in im0 & im1
-    m0 = pred["matches0"] # extract keypoints across im0 & im1
-    # ** line_seg0 and line_seg1 holds the results of the line detection **
-    line_seg0, line_seg1 = pred["lines0"], pred["lines1"] # extract lines in im0 & im1
-    line_matches = pred["line_matches0"] #
-
-    # get valid matching keypoints
-    valid_matches = m0 != -1 # check that there are valid matches
-    match_indices = m0[valid_matches]
-    matched_kps0 = kp0[valid_matches]
-    matched_kpsN = kpN[match_indices]
-
-    # get valid matching line segments
-    valid_matches = line_matches != -1 # check that there are valid matches
-    match_indices = line_matches[valid_matches]
-
-    # **NOTE: WE ARE IGNORING THE GLUESTICK MATCHING RESULTS**
-    # matched_lines0 = line_seg0[valid_matches]
-    # matched_linesN = line_seg1[match_indices]
 
     # extract the lines
     # np.array, shape (n_lines, 2, 2) for

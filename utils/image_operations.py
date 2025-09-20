@@ -4,6 +4,7 @@ from PIL import Image, ImageOps
 import numpy as np
 import seaborn as sns
 from models.gluestick.drawing import plot_color_line_matches_opencv
+import subprocess
 
 def crop_and_resize(image, size=(1024, 576)):
     """
@@ -65,10 +66,10 @@ def get_input_frames_by_index(video0_frames_dir, videoN_frames_dir, frame0_mask_
     frameN_index = 1
     
     # get full filepaths
-    frame0_prev_path = video0_frames_dir + "/" + video0_frames_list[frame0_index - 1]
+    frame0_prev_path = video0_frames_dir + "/" + video0_frames_list[frame0_index - 3]
     frame0_path = video0_frames_dir + "/" + video0_frames_list[frame0_index]
     frameN_path = videoN_frames_dir + "/" + videoN_frames_list[frameN_index]
-    frameN_next_path = videoN_frames_dir + "/" + videoN_frames_list[frameN_index + 1]
+    frameN_next_path = videoN_frames_dir + "/" + videoN_frames_list[frameN_index + 3]
 
     # get images
     frame0_prev = Image.open(frame0_prev_path).convert('RGB')
@@ -122,6 +123,7 @@ def get_input_frames_by_index(video0_frames_dir, videoN_frames_dir, frame0_mask_
     inputs["frame0"] = [frame0_path, frame0]
     inputs["frameN"] = [frameN_path, frameN]
     inputs["frameN_next"] = [frameN_next_path, frameN_next]
+
     return inputs
 
 def save_out_frames(inbetween_images, 
@@ -162,7 +164,7 @@ def save_out_frames(inbetween_images,
         # convert all preceding frames from start video up until frame0_prev_index into PIL Images
         video0_frames_list = os.listdir(video0_frames_dir) # all filepaths in start video
         video0_frames_PIL = [Image.open(os.path.join(video0_frames_dir, video0_frame_path_i)).convert('RGB')
-                        for video0_frame_path_i in video0_frames_list[:-1]]
+                        for video0_frame_path_i in video0_frames_list]
         # save in out_frames_dir
         for video0_frame in video0_frames_PIL:
             # frame filename is xx.png
@@ -191,7 +193,7 @@ def save_out_frames(inbetween_images,
         # convert all frames from end video after frameN_next_index into PIL Images
         videoN_frames_list = os.listdir(videoN_frames_dir) # all filepaths in start video
         videoN_frames_PIL = [Image.open(os.path.join(videoN_frames_dir, videoN_frame_path_i)).convert('RGB') 
-                    for videoN_frame_path_i in videoN_frames_list[1:]]
+                    for videoN_frame_path_i in videoN_frames_list]
         # save in out_frames_dir
         for videoN_frame in videoN_frames_PIL:
             # frame filename is xx.png
@@ -206,10 +208,10 @@ def save_out_frames(inbetween_images,
 
     # make images into gif and save
     gif_path = os.path.join(gif_dir, out_frames_name + '.gif')
-    duration = 100 # if not bef_and_aft else 150
+    duration = 60 # if not bef_and_aft else 150
     out_frames[0].save(gif_path, save_all=True, append_images=out_frames[1:], loop=0, duration=duration)
 
-    return gif_path, out_frames
+    return gif_path
 
 def load_mask(mask_path, width, height, as_numpy=True, invert=False):
     """
@@ -401,9 +403,7 @@ def in_bounding_box(point, box_center, box_w, box_h):
     return in_box
 
 
-# **EDIT THIS ** to take in foreground and background mask
-
-def plot_fg_bg_lines(image, fg_lines, bg_lines, lw, black=True):
+def plot_lines(image, fg_lines, lw, black=True):
     """
     Plot foreground and background lines onto an image, priority on foreground lines; do not plot background lines
     if they overlap with foreground lines.
@@ -411,7 +411,6 @@ def plot_fg_bg_lines(image, fg_lines, bg_lines, lw, black=True):
     Args:
         image (PIL.Image): The input image to paint
         fg_lines (np.array): size (n_lines, 2, 2). foreground lines that are inside the mask.
-        bg_lines (np.array): size (n_lines, 2, 2). background lines that are outside the mask.
         lw (int) : width of line
     Returns:
         line_image (PIL.Image): The image with lines plotted
@@ -420,15 +419,11 @@ def plot_fg_bg_lines(image, fg_lines, bg_lines, lw, black=True):
     img_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
     # choose color palette for lines
-    n = fg_lines.shape[0] + bg_lines.shape[0]
+    n = fg_lines.shape[0]
     line_colors = sns.color_palette(n_colors=n)
 
-    # get bounding box of foreground lines
-    if fg_lines.size != 0:
-        box_center, box_w, box_h = get_lines_bounding_box(fg_lines)
-
     # plot each line segment in foreground
-    for i in range(fg_lines.shape[0]):
+    for i in range(n):
         # get endpoints
         pt1, pt2 = tuple(map(int, fg_lines[i][0])), tuple(map(int, fg_lines[i][1]))
 
@@ -436,25 +431,11 @@ def plot_fg_bg_lines(image, fg_lines, bg_lines, lw, black=True):
         color = (line_colors[i][2] * 255, line_colors[i][1] * 255, line_colors[i][0] * 255)
         cv2.line(img_bgr, pt1, pt2, color, lw)
 
-    # plot each line segment in background
-    for i in range(bg_lines.shape[0]):
-        # get endpoints
-        pt1, pt2 = bg_lines[i][0], bg_lines[i][1]
-
-        # plot line if both points are NOT in bounding box of foreground lines
-        if not in_bounding_box(pt1, box_center, box_w, box_h) and not in_bounding_box(pt2, box_center, box_w, box_h):
-            # fix format for cv2.line
-            pt1, pt2 = tuple(map(int, pt1)), tuple(map(int, pt2))
-            
-            # plot
-            color = (line_colors[i + fg_lines.shape[0]][2] * 255, line_colors[i + fg_lines.shape[0]][1] * 255, line_colors[i + fg_lines.shape[0]][0] * 255)
-            cv2.line(img_bgr, pt1, pt2, color, lw)
-
     # Convert back to PIL.Image
     line_image = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     return line_image
 
-def plot_condition_imgs_fg_priority(image, interped_lines_fg, interped_lines_bg, lw=2, save=True, out_dir=None, black=True):
+def plot_condition_imgs(image, interped_lines_fg, lw=2, save=True, out_dir=None, black=True):
     """
     Plot the interpolated lines onto black images. Plot with priority on foreground lines; do not plot background lines
     if they overlap with foreground lines.
@@ -462,7 +443,6 @@ def plot_condition_imgs_fg_priority(image, interped_lines_fg, interped_lines_bg,
     Args
         image (PIL.Image) : base image 
         interped_lines_fg (List[np.array]) : list of interpolated foreground lines that are inside the masks
-        interped_lines_bg (List[np.array]) : list of interpolated background lines that are outside the mask
         lw (int) : line width on image. default is 2
         save (bool) : whether to save the images or not
         out_dir (string) : directory to save the images
@@ -471,8 +451,6 @@ def plot_condition_imgs_fg_priority(image, interped_lines_fg, interped_lines_bg,
     Returns
         conditions_images (List[PIL.Image]) : list of framewise conditions as images
     """
-    if len(interped_lines_fg) != len(interped_lines_bg): raise Exception("Foreground and background lines have different number of frames")
-
     # base image
     image = np.zeros_like(np.asarray(image)) if black else np.ones_like(np.asarray(image)) * 255
 
@@ -484,10 +462,9 @@ def plot_condition_imgs_fg_priority(image, interped_lines_fg, interped_lines_bg,
     for i in range(num_frames):
         # get lines
         fg_lines = interped_lines_fg[i]
-        bg_lines = interped_lines_bg[i]
 
         # get frame conditon
-        condition_image = plot_fg_bg_lines(image, fg_lines, bg_lines, lw, black)
+        condition_image = plot_lines(image, fg_lines, lw, black)
         condition_images.append(condition_image)
 
         # save imag
@@ -532,3 +509,28 @@ def plot_condition_imgs_base(image, interped_lines, lw=1, save=True, out_dir=Non
             conditions_image_PIL.save(os.path.join(out_dir, 'condition{:02d}.png'.format(i)))
 
     return conditions_images
+
+def pngs_to_mp4(input_dir, output_file, framerate):
+    """
+    Convert PNG sequence to MP4 video using ffmpeg.
+
+    Args
+        input_dir (str) : Directory with PNG images (named sequentially like img001.png).
+        output_file (str) : Path to output MP4 file.
+        framerate (int) Frames per second of output video.
+    """
+    # ffmpeg expects sequentially numbered files
+    # Example: img001.png, img002.png, ...
+    pattern = os.path.join(input_dir, "transition_%02d.png")  # adjust padding as needed
+
+    cmd = [
+        "ffmpeg",
+        "-y",  # overwrite
+        "-framerate", str(framerate),
+        "-i", pattern,
+        "-c:v", "mpeg4",
+        "-pix_fmt", "yuv420p",
+        output_file,
+    ]
+
+    subprocess.run(cmd, check=True)

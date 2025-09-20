@@ -40,28 +40,6 @@ def plot_flow(image, points, flow, magnitude=100.0):
     flow_image = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     return flow_image
 
-# get extended endpoints of line
-def get_extended_endpoints(matched_line, midpoint, width, height):
-    # get the gradient vector as (run, rise)
-    run = matched_line[1][0] - matched_line[0][0]
-    rise = matched_line[1][1] - matched_line[0][1]
-
-    # normalize gradient vector
-    mag = np.sqrt(rise ** 2 + run ** 2)
-    run /= mag
-    rise /= mag
-
-    # vector scalar - this amplifies the gradient vector
-    scalar = max(height, width) * 2
-
-    # extend endpoints
-    x_a = int(midpoint[0] + scalar * run)
-    y_a = int(midpoint[1] + scalar * rise)
-    x_b = int(midpoint[0] - scalar * run)
-    y_b = int(midpoint[1] - scalar * rise)
-
-    return (x_a, y_a), (x_b, y_b)
-
 def plot_lines(image, lines, extend_lines=False, color=True, number=True):
     """
     Plot lines onto an image
@@ -78,7 +56,7 @@ def plot_lines(image, lines, extend_lines=False, color=True, number=True):
 
     # choose color palette for lines
     n = lines.shape[0]
-    line_colors = sns.color_palette(n_colors=n)
+    line_colors = sns.color_palette('husl', n_colors=n)
 
     # plot each line segment
     for i in range(n):
@@ -125,7 +103,7 @@ def plot_points(image, points, coordinates=False, color=False):
     for i in range(n):
         x, y = points[i, 0, 0], points[i, 0, 1]
         point = (int(x), int(y))
-        cv2.circle(img_bgr, point, radius=2, color=(0, 0, 255), thickness=-1)  # red circle
+        cv2.circle(img_bgr, point, radius=3, color=(0, 0, 255), thickness=-1)  # red circle
 
         # plot coordinates slightly diagonally below the point
         if coordinates:
@@ -190,13 +168,6 @@ def visualize_lines(height, width,
     img0_lines_colored_midpts.save(os.path.join(output_dir, "frame0_lines_colored_midpts.png"))
     imgN_lines_colored_midpts.save(os.path.join(output_dir, "frameN_lines_colored_midpts.png"))
 
-    # plot line segments, colored, extended
-    background = Image.fromarray(np.ones((height, width, 3), dtype=np.uint8) * 255) if bg_white else Image.fromarray(np.zeros((height, width, 3), dtype=np.uint8))
-    img0_lines_colored_extended = plot_lines(background, matched_lines0, extend_lines=True, color=True, number=False)
-    imgN_lines_colored_extended = plot_lines(background, matched_linesN, extend_lines=True, color=True, number=False)
-    img0_lines_colored_extended.save(os.path.join(output_dir, "frame0_lines_colored_extended.png"))
-    imgN_lines_colored_extended.save(os.path.join(output_dir, "frameN_lines_colored_extended.png"))
-
     # plot line segments, colored, numbered
     img0_lines_colored_numbered = plot_lines(img0, matched_lines0, extend_lines=False, color=True, number=True)
     imgN_lines_colored_numbered = plot_lines(imgN, matched_linesN, extend_lines=False, color=True, number=True)
@@ -238,28 +209,3 @@ def visualize_flow_field(flow, output_path, scale=1.0):
     img_PIL.save(output_path)
 
     return img_PIL
-
-def visualize_interped_flow_fields(interped_flow, output_dir, scale=1.0):
-    """
-    Visualize each frame of interpolated optical flow
-    """
-    # flow out directory
-    flow_out_dir = os.path.join(output_dir, "flow_frames")
-    if not os.path.exists(flow_out_dir): os.mkdir(flow_out_dir)
-
-    # turn List into np.array
-    n = len(interped_flow)
-    interped_flow = np.array(interped_flow)
-
-    # intialize output
-    output_frames = []
-    for i in range(n):
-        # get flow for the current frame
-        frame_flow = interped_flow[i]
-
-        # plot image
-        output_path = os.path.join(flow_out_dir, f"flow_frame_{i}.png")
-        img_PIL = visualize_flow_field(frame_flow, output_path, scale=scale)
-        output_frames.append(img_PIL)
-
-    return output_frames
