@@ -2,10 +2,10 @@
 from utils.arguments import parse_args
 from utils.init_models import load_models
 from inference import generate_transition
+from utils.file_io import extract_frames_from_mp4
 
-"""
-** Visit utils/arguments.py to view & customize input parameters **
-"""
+import os
+import re
 
 if __name__ == "__main__":
     # Parse command-line arguments - get all the variables needed for script

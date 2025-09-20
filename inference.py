@@ -6,6 +6,7 @@ from utils.visualization import *
 from utils.baselines import *
 
 def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progress=True, visualize=True):
+    
     # progress
     if progress: print("\n–– GENERATING TRANSITION ––")
 
@@ -116,6 +117,7 @@ def generate_transition(args, GlueStick_model, FCVG_model, SEARAFT_model, progre
     print("–– OUTPUT TRANSITION GIF SAVED IN " + out_gif_path + " ––")
 
     # export and save generated inbetween frames as MP4
-    out_mp4_path = os.path.join(curr_trial_dir, 'transition.mp4')
+    out_mp4_path = os.path.join(curr_trial_dir, 'transition.mp4',  "transition_%02d.png")
     pngs_to_mp4(out_frames_dir, out_mp4_path)
-    print("–– OUTPUT TRANSITION MP4 SAVED IN " + out_mp4_path + " ––")
+
+    # print("–– OUTPUT TRANSITION MP4 SAVED IN " + out_mp4_path + " ––")

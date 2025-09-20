@@ -472,10 +472,10 @@ def plot_condition_imgs(image, interped_lines_fg, lw=2, save=True, out_dir=None,
 
     return condition_images
 
-def pngs_to_mp4(input_dir, output_file, framerate=24):
+def pngs_to_mp4(input_dir, output_file, frame_file_format, framerate=24):
     """
     Convert PNG sequence to MP4 video using ffmpeg.
-
+s
     Args
         input_dir (str) : Directory with PNG images (named sequentially like img001.png).
         output_file (str) : Path to output MP4 file.
@@ -483,7 +483,7 @@ def pngs_to_mp4(input_dir, output_file, framerate=24):
     """
     # ffmpeg expects sequentially numbered files
     # Example: img001.png, img002.png, ...
-    pattern = os.path.join(input_dir, "transition_%02d.png")  # adjust padding as needed
+    pattern = os.path.join(input_dir, frame_file_format)  # adjust padding as needed
 
     cmd = [
         "ffmpeg",
