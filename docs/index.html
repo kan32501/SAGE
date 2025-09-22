@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Self-Supervised Motion Fields</title>
+    <title>SAGE: Generative Video Transitions</title>
     <script>
         window.dataLayer = window.dataLayer || [];
 
@@ -133,18 +133,17 @@
                 <div class="columns is-centered is-gapless">
                     <div class="column has-text-centered">
                         <br><br>
-                        <h1 class="title is-1 publication-title">SMF: Template-free and Rig-free Animation Transfer
-                            using Kinetic Codes</h1>
+                        <h1 class="title is-1 publication-title">SAGE: Structure-Aware Generative Video Transitions between Diverse Clips</h1>
 
-                        <h3 class="title is-5"><center><b>SIGGRAPH Asia 2025 [ACM Transactions on Graphics] (Conditionally Accepted)</b></center></h3>
+                        <h3 class="title is-5"><center><b>Submission to Eurographics 2026; paper 1157</b></center></h3>
 
                         <div class="is-size-5 publication-authors">
                             <span class="author-block">
-                                <a href="https://sanjeevmk.github.io/">Sanjeev Muralikrishnan</a><sup>1*</sup>,</span>
+                                <a href="http://www0.cs.ucl.ac.uk/staff/n.mitra/">Mia Kan</a><sup>1*</sup>,</span>
                             <span class="author-block">
-                                <a href="https://niladridutt.com/">Niladri Shekhar Dutt</a><sup>1*</sup>,</span>
+                                <a href="http://www0.cs.ucl.ac.uk/staff/n.mitra/">Yilin Liu</a><sup>1*</sup>,</span>
                             <span class="author-block">
-                                <a href="http://www0.cs.ucl.ac.uk/staff/n.mitra/">Niloy Mitra</a><sup>1,2</sup>
+                                <a href="http://www0.cs.ucl.ac.uk/staff/n.mitra/">Niloy Mitra</a><sup>1</sup>
                             </span>
                         </div>
 
@@ -152,7 +151,7 @@
 
                         <div class="is-size-5 publication-authors">
                             <span class="author-block"><sup>1</sup>University College London</span>
-                            <span class="author-block"><sup>2</sup>Adobe Research</span>
+                            <!-- <span class="author-block"><sup>2</sup>Adobe Research</span> -->
                         </div>
 
                         <div class="column has-text-centered">
@@ -200,23 +199,14 @@
                             <div class="hero-body" style="margin-top:-50px;">
                                 <img src="static/teaser.png" class="center" />
                             </div>
-                            <p>We present a self-supervised method to transfer coarse motion sequences, embedded in a learned Kinetic Code space, to full body motion. Samples from the Kinetic Code space can be consumed by our method, Self-supervised Motion Fields (SMF), to produce mesh animations. Our method is trained with sparse signals and can be used for motion interpolation . We do not assume access to any morphable model,  canonical template mesh, or deformation rigs.   
-                                Left shows various sparse motion inputs (3D keyframes, Mixamo sequences, or monocular video) that can be embedded into the learned KC space and decoded, and consumed by temporally coherent motion prediction via SMF to produce animations for different characters (right), with varying topology and shapes. SMF can faithfully transfer human motion to non-hamnoid characters. </p>
+                            <p> {explanation of the teaser figure} </p>
                         </div>
                     </section>
                     <br><br>
                     <h2 class="title is-3">Abstract</h2>
                     <div class="content has-text-justified">
                         <p>
-                            Animation retargeting involves applying a sparse motion description (e.g., 2D or 3D keypoint sequences) to a given character mesh to produce a semantically plausible and temporally coherent full-body mesh sequence.
-
-                            Existing approaches come with a mix of restrictions -- they require access to template-based shape priors or artist-designed deformation rigs, suffer from limited generalization to unseen motion and/or shapes, or exhibit motion jitter. 
-                            We propose Self-supervised Motion Fields (SMF), a self-supervised framework that is trained with only sparse motion representations, without requiring dataset-specific annotations, templates, or rigs. 
-                            At the heart of our method are Kinetic Codes, a novel autoencoder-based sparse motion encoding, that exposes a semantically rich latent space simplifying large-scale training. 
-Our architecture comprises of dedicated  spatial and temporal gradient predictors, which are jointly trained in an end-to-end fashion. The combined network, regularized by the Kinetic Codes' latent space, has good generalization across both unseen shapes and new motions.
-We evaluated our method on unseen motion sampled from AMASS, D4D, Mixamo, and raw monocular video for animation transfer on various characters with varying shapes and topology. We report a new SoTA on the AMASS dataset in the context of generalization to unseen motion. 
-Source code and models will be released on acceptance.
-
+                           Video transitions aim to synthesize intermediate frames between two clips, but naïve approaches such as linear blending introduce artifacts that limit professional use or break temporal coherence. Traditional techniques (cross-fades, morphing, frame interpolation) and recent generative inbetweening methods can produce high-quality plausible intermediates, but they struggle with bridging \textit{diverse clips} involving large temporal gaps or significant semantic differences, leaving a gap for content-aware and visually coherent transitions. We address this challenge by drawing on artistic workflows, distilling strategies such as aligning silhouettes and interpolating salient features to preserve structure and perceptual continuity. Building on this, we propose \name (Structure-Aware Generative vidEo transitions) as a  zeroshot approach that combines structural guidance, provided via line maps and motion flow, with generative synthesis, enabling smooth, semantically consistent transitions without fine-tuning. Extensive experiments and comparison with current alternatives, namely  \cite{film,tvg2024,zhang2023diffmorpher,vace,zhu2025generative}, demonstrate that \name outperforms both classical and generative baselines on quantitative metrics and user studies for producing transitions between diverse clips. Code to be released on acceptance.
                         </p>
                     </div>
                 </div>
