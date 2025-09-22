@@ -1,128 +1,1005 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DiffMorpher</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-      color: #222;
-      background: #f9f9f9;
-    }
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Self-Supervised Motion Fields</title>
+    <script>
+        window.dataLayer = window.dataLayer || [];
 
-    header {
-      text-align: center;
-      padding: 3rem 1rem 2rem;
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+        function gtag() {
+            dataLayer.push(arguments);
+        }
 
-    header h1 {
-      margin: 0;
-      font-size: 2.5rem;
-    }
+        gtag('js', new Date());
+    </script>
 
-    header p.authors {
-      margin-top: 0.5rem;
-      font-size: 1.1rem;
-      color: #666;
-    }
 
-    main {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
 
-    section {
-      margin-bottom: 2.5rem;
-    }
 
-    section h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 0.5rem;
-    }
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
 
-    .video-container {
-      position: relative;
-      padding-bottom: 56.25%;
-      height: 0;
-      overflow: hidden;
-    }
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
 
-    .video-container iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: 0;
-    }
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+    <!-- <script src="./static/js/bulma-carousel.min.js"></script> -->
+    <script src="./static/js/bulma-slider.min.js"></script>
+    <script src="./static/js/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" />
+    <style>
+        /* Hide all tab content by default */
+        .tab-content {
+            display: none;
+            margin-top: 1rem;
+        }
 
-    footer {
-      text-align: center;
-      padding: 2rem;
-      font-size: 0.9rem;
-      color: #666;
-    }
+        /* Show active content */
+        .tab-content.is-active {
+            display: block;
+        }
 
-    a.button {
-      display: inline-block;
-      margin: 0.5rem;
-      padding: 0.6rem 1rem;
-      background: #007acc;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-      transition: background 0.2s ease;
-    }
+        /* Video columns */
+        .column.is-centered video {
+            width: 100%;
+            height: auto;
+        }
 
-    a.button:hover {
-      background: #005f99;
-    }
-  </style>
+        /* Switcher spacing */
+        .my-switcher {
+            margin-bottom: 2rem;
+        }
+
+        /* 
+           ---------- TAB STYLING -----------
+           1) Soft background color for all tabs
+           2) Highlight the active tab
+           3) "Motions:" label on the left
+        */
+
+        /* Add a bit of horizontal alignment to the tabs list */
+        .my-tabs {
+            display: flex;
+            align-items: center;
+        }
+
+        /* The "Motions:" label */
+        .my-tabs .motions-label {
+            margin-right: 1rem;
+            font-weight: 600;
+            color: #555;
+            /* a slightly softer gray than black */
+        }
+
+        /* The <ul> that contains the tab <li> elements */
+        .my-tabs ul {
+            margin-left: 0.5rem;
+            /* small gap after "Motions:" label */
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        /* Default tab appearance */
+        .my-tabs ul li {
+            background-color: #f5f5f5;
+            /* soft gray background */
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        /* The anchor text inside each tab */
+        .my-tabs ul li a {
+            color: #333;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Hover effect on tabs */
+        .my-tabs ul li:hover {
+            background-color: #e8e8e8;
+        }
+
+        /* Active tab styling */
+        .my-tabs ul li.is-active {
+            background-color: #3273dc;
+            /* Bulma's primary color */
+        }
+
+        .my-tabs ul li.is-active a {
+            color: #fff;
+            /* White text on the active tab */
+        }
+    </style>
+    <style>
+        /* Increase width by 30% for is-max-desktop */
+        .container.is-max-desktop {
+            max-width: 85%;
+            /* Increase width by 30% */
+        }
+    </style>
 </head>
+
 <body>
-  <header>
-    <h1>DiffMorpher</h1>
-    <p class="authors">Kevin Thu · Co-Authors Here</p>
-    <p>
-      <a href="https://arxiv.org/abs/xxxx.xxxxx" class="button">Paper</a>
-      <a href="https://github.com/kevin-thu/DiffMorpher" class="button">Code</a>
-    </p>
-  </header>
 
-  <main>
-    <section>
-      <h2>Abstract</h2>
-      <p>
-        This is a placeholder abstract. Replace this with your project description. 
-        Typically, it’s a short summary explaining the motivation, method, and results.
-      </p>
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered is-gapless">
+                    <div class="column has-text-centered">
+                        <br><br>
+                        <h1 class="title is-1 publication-title">SMF: Template-free and Rig-free Animation Transfer
+                            using Kinetic Codes</h1>
+
+                        <h3 class="title is-5"><center><b>SIGGRAPH Asia 2025 [ACM Transactions on Graphics] (Conditionally Accepted)</b></center></h3>
+
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block">
+                                <a href="https://sanjeevmk.github.io/">Sanjeev Muralikrishnan</a><sup>1*</sup>,</span>
+                            <span class="author-block">
+                                <a href="https://niladridutt.com/">Niladri Shekhar Dutt</a><sup>1*</sup>,</span>
+                            <span class="author-block">
+                                <a href="http://www0.cs.ucl.ac.uk/staff/n.mitra/">Niloy Mitra</a><sup>1,2</sup>
+                            </span>
+                        </div>
+
+                        * Equal contribution
+
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block"><sup>1</sup>University College London</span>
+                            <span class="author-block"><sup>2</sup>Adobe Research</span>
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <!-- PDF Link. -->
+                                <span class="link-block">
+                                    <a href="https://arxiv.org/abs/2504.04831" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="ai ai-arxiv"></i>
+                                        </span>
+                                        <span>arXiv</span>
+                                    </a>
+                                </span>
+                                <span class="link-block">
+                                    <a href="https://arxiv.org/pdf/2504.04831" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span>Paper</span>
+                                    </a>
+                                </span>
+                                <!-- Code Link. -->
+                                <span class="link-block">
+                                    <a href="" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span>Code (coming soon)</span>
+                                    </a>
+                                </span>
+                            </div>
+                </div>
     </section>
 
-    <section>
-      <h2>Video</h2>
-      <div class="video-container">
-        <iframe src="https://www.youtube.com/embed/VIDEO_ID" allowfullscreen></iframe>
-      </div>
-    </section>
+    <section class="section">
+        <div class="container is-max-desktop">
+            <!-- Abstract. -->
+            <div class="columns is-centered is-gapless has-text-centered">
+                <div class="column is-four-fifths">
+                    <section class="hero teaser">
+                        <div class="container is-max-desktop">
+                            <div class="hero-body" style="margin-top:-50px;">
+                                <img src="static/teaser.png" class="center" />
+                            </div>
+                            <p>We present a self-supervised method to transfer coarse motion sequences, embedded in a learned Kinetic Code space, to full body motion. Samples from the Kinetic Code space can be consumed by our method, Self-supervised Motion Fields (SMF), to produce mesh animations. Our method is trained with sparse signals and can be used for motion interpolation . We do not assume access to any morphable model,  canonical template mesh, or deformation rigs.   
+                                Left shows various sparse motion inputs (3D keyframes, Mixamo sequences, or monocular video) that can be embedded into the learned KC space and decoded, and consumed by temporally coherent motion prediction via SMF to produce animations for different characters (right), with varying topology and shapes. SMF can faithfully transfer human motion to non-hamnoid characters. </p>
+                        </div>
+                    </section>
+                    <br><br>
+                    <h2 class="title is-3">Abstract</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            Animation retargeting involves applying a sparse motion description (e.g., 2D or 3D keypoint sequences) to a given character mesh to produce a semantically plausible and temporally coherent full-body mesh sequence.
 
-    <section>
-      <h2>Results</h2>
-      <p>
-        Show sample results here. You can embed images, gifs, or videos demonstrating your work.
-      </p>
-      <img src="assets/example.png" alt="Example result" style="max-width:100%; border:1px solid #ddd; border-radius:8px;">
-    </section>
-  </main>
+                            Existing approaches come with a mix of restrictions -- they require access to template-based shape priors or artist-designed deformation rigs, suffer from limited generalization to unseen motion and/or shapes, or exhibit motion jitter. 
+                            We propose Self-supervised Motion Fields (SMF), a self-supervised framework that is trained with only sparse motion representations, without requiring dataset-specific annotations, templates, or rigs. 
+                            At the heart of our method are Kinetic Codes, a novel autoencoder-based sparse motion encoding, that exposes a semantically rich latent space simplifying large-scale training. 
+Our architecture comprises of dedicated  spatial and temporal gradient predictors, which are jointly trained in an end-to-end fashion. The combined network, regularized by the Kinetic Codes' latent space, has good generalization across both unseen shapes and new motions.
+We evaluated our method on unseen motion sampled from AMASS, D4D, Mixamo, and raw monocular video for animation transfer on various characters with varying shapes and topology. We report a new SoTA on the AMASS dataset in the context of generalization to unseen motion. 
+Source code and models will be released on acceptance.
 
-  <footer>
-    <p>&copy; 2025 DiffMorpher Authors. All rights reserved.</p>
-  </footer>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <section class="section">
+                <div class="container is-max-desktop">
+                    <!-- Sanity Test. -->
+                    <div class="columns is-centered is-gapless">
+                        <div class="column is-full-width">
+
+
+                    
+                            <h2 class="title is-3">Results</h2>
+                            <h2 class="title is-4">Motion sequences from AMASS</h2>
+                            <p>We compare our method on a wide variety of unseen motion transfer from AMASS to varied
+                                meshes with significantly different shape and topology. <b>All results show transferred
+                                (unseen) motion to an unseen in-the-wild shape without rigging</b>.</p>
+                            <br>
+
+                            <center>
+                                <h2 class="title is-4">Motion transfer to humanoids</h2>
+                            </center>
+                            <br><br>
+
+
+                            <div class="my-switcher">
+                                <!-- Tabs -->
+                                <div class="tabs is-boxed is-centered">
+                                    <ul>
+                                        <!-- First tab active by default -->
+                                        <li class="is-active" data-tab="running">
+                                            <a>Running on spot</a>
+                                        </li>
+                                        <li data-tab="jumping">
+                                            <a>Jumping Jacks</a>
+                                        </li>
+                                        <li data-tab="punching">
+                                            <a>Punching</a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Running (in-place) Content -->
+                                <div class="tab-content is-active" data-content="running">
+                                    <div class="content has-text-justified">
+                                        <div class="columns is-full-width is-gapless">
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/videos/skeleton_50027_running_on_spot_50021_running_on_spot.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_running_on_spot_50027_holey_man_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_running_on_spot_50027_reptile_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Jumping Jacks Content -->
+                                <div class="tab-content" data-content="jumping">
+                                    <div class="content has-text-justified">
+                                        <div class="columns is-full-width is-gapless">
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/videos/skeleton_50002_jumping_jacks_50021_running_on_spot.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_jumping_jacks_50002_jared_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_jumping_jacks_50002_octoman_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Punching Content -->
+                                <div class="tab-content" data-content="punching">
+                                    <div class="content has-text-justified">
+                                        <div class="columns is-full-width is-gapless">
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/videos/skeleton_50026_punching_50021_running_on_spot.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_punching_50026_scan_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                            <div class="column is-centered">
+                                                <video autoplay controls muted loop disablepictureinpicture
+                                                    controlslist="nodownload" playsinline>
+                                                    <source
+                                                        src="./static/smf_videos/output_eg_punching_50026_maynard_rot90_smf.mp4"
+                                                        type="video/mp4" />
+                                                </video>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <br><br>
+
+                            <center>
+                                <h2 class="title is-4">Motion transfer to non-humanoids</h2>
+                            </center>
+                            <br>
+                            <p>SMF shows strong generalization from human source motion to non-humanoid characters (octopus, hand, scissor). Even though the characters possess multiple arms for example, SMF produces plausible motion without artifacts.</p>
+                            <br>
+
+                            <div class="content has-text-justified">
+                                <div class="columns is-full-width is-gapless">
+                                    <div class="column is-centered">
+                                        <video autoplay controls muted loop disablepictureinpicture
+                                            controlslist="nodownload" playsinline>
+                                            <source
+                                                src="./static/videos/smf_octopus.mp4"
+                                                type="video/mp4" />
+                                        </video>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content has-text-justified">
+                                <div class="columns is-full-width is-gapless">
+                                    <div class="column is-centered">
+                                        <video autoplay controls muted loop disablepictureinpicture
+                                            controlslist="nodownload" playsinline>
+                                            <source
+                                                src="./static/videos/smf_knees_non_humaoids.mp4"
+                                                type="video/mp4" />
+                                        </video>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            
+
+
+
+                            <br><br>
+
+
+
+                        </div>
+                    </div>
+
+                    <h2 class="title is-3">Comparison</h2>
+
+                    <center><h2 class="title is-4">Motion sequences from Mixamo (Out-of-Distribution dataset)</h2></center>
+                    <br>
+                    <p>We present results on motions sampled from the Mixamo dataset, which are transferred to diverse, unseen shapes using their 3D keypoints. To automate the process of establishing correspondence, we use Diff3F to find matching keypoints between AMASS and Mixamo. Although these correspondences can be noisy due to imperfectly overlapping keypoint locations, our method (SMF) faithfully transfers the motion. This robustness is attributed to its Kinetic Code, which enables a smooth and continuous encoding of the motion.</p>
+                    <br>
+                    <p><b>All Mixamo motions are completely unseen (ours and all baselines except Skeleton-free are only trained on AMASS). Note, Skeleton-free requires the complete mesh as input and it is additionally trained on Mixamo data.</b></p>
+
+                    <br><p>Compared to ours, other methods fail to transfer the motion faithfully and/or result in <b>numerous artifacts</b>.</p>
+
+                    <br><br>
+
+                    <div class="my-switcher">
+                        <!-- Tabs (Running / Chicken Wings) -->
+                        <div class="tabs is-boxed is-centered">
+                            <ul>
+                                <!-- The first tab is active by default -->
+                                <li class="is-active" data-tab="hiphop">
+                                    <a>Hip-hop</a>
+                                </li>
+                                <li data-tab="surprised">
+                                    <a>Surprised</a>
+                                </li>
+                                <li data-tab="argue">
+                                    <a>Argue</a>
+                                </li>
+                                <li data-tab="shuffling">
+                                    <a>Shuffling</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Running (in-place) Content -->
+                        <div class="tab-content is-active" data-content="hiphop">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/mixamo_hiphop.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-content" data-content="surprised">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/mixamo_surprised.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-content" data-content="argue">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/mixamo_argue.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-content" data-content="shuffling">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/mixamo_shuffling.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+
+
+
+                    </div>
+
+                    <br><br><br>
+
+                    <h2 class="title is-4">Motion sequences from AMASS</h2>
+
+                    <center>
+                        <h2 class="title is-4">Error Analysis</h2>
+                    </center>
+                    <br>
+
+                    <p>Notice the incorrect pose and presence of artifacts for baseline methods. Skeleton-Free
+                        Pose Transfer suffers from artifacts and unnatural deformations seen in the arms, pelvic
+                        and stretching of the neck (please zoom-in). Errors are highlighted in red. Note: Skeleton-Free
+                        Pose
+                        Transfer requires the complete source mesh as input compared to our sparse keypoints
+                        setup which is easier to author but more challenging to transfer.</p>
+                    <br>
+                    <p>Click the below button to switch between different motions.</p><br>
+                    <div class="my-switcher">
+                        <!-- Tabs (One Leg Jump / Punching) -->
+                        <div class="tabs is-boxed is-centered">
+                            <ul>
+                                <li class="is-active" data-tab="onelegjump">
+                                    <a>One Leg Jump</a>
+                                </li>
+                                <li data-tab="knees">
+                                    <a>Knees</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- One Leg Jump Content -->
+                        <div class="tab-content is-active" data-content="onelegjump">
+                            <!-- <h3 class="title is-4">One Leg Jump</h3> -->
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/one_leg_jump_error.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Punching Content -->
+                        <div class="tab-content" data-content="knees">
+                            <!-- <h3 class="title is-4">Punching</h3> -->
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/knees_error.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <br><br>
+
+                    <center>
+                        <h3 class="title is-4">Unseen Motion Transfer to in-the-wild stylized characters</h3>
+
+                        <p>Motion transfer to in-the-wild characters gathered from Mixamo, Sketchfab, etc.</p>
+
+                        <br>
+                    </center>
+
+                    <div class="my-switcher">
+                        <!-- Tabs (Running / Chicken Wings) -->
+                        <div class="tabs is-boxed is-centered">
+                            <ul>
+                                <!-- The first tab is active by default -->
+                                <li class="is-active" data-tab="arms">
+                                    <a>Shake Arms</a>
+                                </li>
+                                <li data-tab="jump">
+                                    <a>One Leg Jump</a>
+                                </li>
+                                <li data-tab="knees">
+                                    <a>Knees</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Running (in-place) Content -->
+                        <div class="tab-content is-active" data-content="arms">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/arms.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-content" data-content="jump">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/jump.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+
+                        <div class="tab-content" data-content="knees">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/knees.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <br><br>
+
+                    <center>
+                        <h3 class="title is-4">Unseen Motion Transfer to non-humanoid characters</h3>
+
+                        <p>Motion transfer from human source to non-humanoid characters gathered from D4D and Sketchfab.</p>
+
+                        <br>
+                    </center>
+
+                    <div class="my-switcher">
+                        <!-- Tabs (Running / Chicken Wings) -->
+                        <div class="tabs is-boxed is-centered">
+                            <ul>
+                                <!-- The first tab is active by default -->
+                                <li class="is-active" data-tab="arms">
+                                    <a>Running-on-spot</a>
+                                </li>
+                                <li data-tab="jump">
+                                    <a>One Leg Jump</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Running (in-place) Content -->
+                        <div class="tab-content is-active" data-content="arms">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/running_on_spot_wolf.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-content" data-content="jump">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <!-- <p>
+                                                <center>GT</center>
+                                            </p> -->
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/one_leg_jump_reptile.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+
+
+
+                    <br><br>
+
+                    <h3 class="title is-3">Interpolation of Kinetic Code</h3>
+
+                    <p>Our Kinetic Code offers a smooth latent space for realistic motion interpolation. We mix
+                        different motion categories and transfer it to different characters. In contrast, we see
+                        interpolation of mesh vertices (ground truth source) in the Euclidean space leads to flattening
+                        of the hands
+                        in Knees + Shake Arms as they move in different directions. In One Leg Jump + Punching, we see
+                        the punching being preserved compared to the downwards punching motion in euclidean space.</p>
+                    <br>
+                    <!-- <p>
+                                    <strong>Euclidean Interpolation:</strong> Linear Interpolation (equal weightage) of the source meshes 
+                                    (<span>\(M_1 + M_2\)</span>)
+                                  </p>
+                                  
+                                  <p>
+                                    <strong>Kinetic Code Interpolation:</strong><br/>
+                                    <span>\(M_1 \xrightarrow{\gamma\text{ encoding}} E_1,\quad 
+                                            M_2 \xrightarrow{\gamma\text{ encoding}} E_2,\quad 
+                                            E_1 + E_2 \xrightarrow{\mathrm{SMF}} M_3\)</span>
+                                  </p> -->
+
+                    <!-- <br><br> -->
+
+                    <div class="my-switcher">
+                        <!-- Tabs (Knees + Shake Arms / One Leg Jump + Chicken Wings) -->
+                        <div class="tabs is-boxed is-centered">
+                            <ul>
+                                <!-- The first tab is active by default -->
+                                <li class="is-active" data-tab="interpolate1">
+                                    <a>Knees + Shake Arms</a>
+                                </li>
+                                <li data-tab="interpolate2">
+                                    <a>One Leg Jump + Punching</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Tab Content: Knees + Shake Arms -->
+                        <div class="tab-content is-active" data-content="interpolate1">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/interpolation_knees_shake_arms.mp4"
+                                            type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                        </div> <!-- Make sure to close this tab-content here -->
+
+                        <!-- Tab Content: One Leg Jump + Chicken Wings -->
+                        <div class="tab-content" data-content="interpolate2">
+                            <div class="columns is-full-width is-gapless">
+                                <div class="column is-centered">
+                                    <video autoplay controls muted loop disablepictureinpicture
+                                        controlslist="nodownload" playsinline>
+                                        <source src="./static/videos/interpolation_one_leg_jump_punching.mp4"
+                                            type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Chicken Wings Content
+                                <div class="tab-content" data-content="chicken">
+                                    <h3 class="title is-4">Chicken Wings</h3>
+                                    <div class="columns is-full-width is-gapless">
+                                        <div class="column is-centered">
+                                            <p>
+                                                <center>GT</center>
+                                            </p>
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source src="./static/smf_videos/output_eg_chicken_wings_50009_skel.mp4"
+                                                    type="video/mp4" />
+                                            </video>
+                                        </div>
+                                        <div class="column is-centered">
+                                            <p>
+                                                <center>NJF</center>
+                                            </p>
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source
+                                                    src="./static/smf_videos/chicken_wings_50009_skeletonzombie_rot90_njf.mp4"
+                                                    type="video/mp4" />
+                                            </video>
+                                        </div>
+                                        <div class="column is-centered">
+                                            <p>
+                                                <center>TRJ</center>
+                                            </p>
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source
+                                                    src="./static/smf_videos/chicken_wings_50009_skeletonzombie_rot90_trj.mp4"
+                                                    type="video/mp4" />
+                                            </video>
+                                        </div>
+                                        <div class="column is-centered">
+                                            <p>
+                                                <center>𝑆𝑀𝐹 (Ours)</center>
+                                            </p>
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source
+                                                    src="./static/smf_videos/chicken_wings_50009_skeletonzombie_rot90_smf.mp4"
+                                                    type="video/mp4" />
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+
+                    <br><br>
+
+
+                    <br><br>
+
+
+                    <div class="columns is-centered is-gapless">
+                        <div class="column is-full-width">
+                            <h2 class="title is-3">2D monocular capture to unseen 3D target shape</h2>
+                            <p> We transfer motion from 2D monocular capture to an unseen in-the-wild 3D mesh
+                                without any rigging or template. This is a very challenging scenario and we use
+                                our 2D motion representation for solving this. While the transferred motion is
+                                not perfect and there are artifacts, ours is the first method capable of
+                                performing it without requiring a template shape. </p>
+                            <br><br>
+                            <div class="content has-text-justified">
+                                <!-- <p>In comparison to ours, NJF has jitters and artefacts especially at later time steps.</p> -->
+                                <div class="columns is-full-width is-gapless">
+                                    <div class="column is-centered">
+                                        <!-- <p><center>Source moiton</center></p> -->
+                                        <video autoplay controls muted loop disablepictureinpicture
+                                            controlslist="nodownload" playsinline>
+                                            <source src="./static/smf_videos/2d.mp4" type="video/mp4">
+                                        </video>
+                                    </div>
+                                    <!-- <div class="column is-centered">
+        
+                                  <video autoplay controls muted loop disablepictureinpicture controlslist="nodownload" playsinline>
+                                      <source src="./static/2d/holeyman.mp4" type="video/mp4">
+                                  </video>
+                              </div>
+                              <div class="column is-centered">
+        
+                                  <video autoplay controls muted loop disablepictureinpicture controlslist="nodownload" playsinline>
+                                      <source src="./static/2d/jared.mp4" type="video/mp4">
+                                  </video>
+                              </div>
+                              <div class="column is-centered">
+        
+                                  <video autoplay controls muted loop disablepictureinpicture controlslist="nodownload" playsinline>
+                                      <source src="./static/2d/maynard.mp4" type="video/mp4">
+                                  </video>
+                              </div> -->
+                                </div>
+                                <br><br>
+
+
+                                <!-- <p>In comparison to ours, NJF has jitters and artefacts especially at later time steps.</p> -->
+                                <div class="columns is-full-width is-gapless">
+                                    <div class="column is-centered">
+                                        <!-- <p><center>Input</center></p> -->
+                                        <video autoplay controls muted loop disablepictureinpicture
+                                            controlslist="nodownload" playsinline>
+                                            <source src="./static/videos/yt.mp4" type="video/mp4">
+                                        </video>
+                                    </div>
+                                    <div class="column is-centered">
+                                        <!-- <p><center>NJF</center></p> -->
+                                        <video autoplay controls muted loop disablepictureinpicture
+                                            controlslist="nodownload" playsinline>
+                                            <source src="./static/videos/nsd.mp4" type="video/mp4">
+                                        </video>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+
+
+                    <br><br><br>
+
+
+                    <!--/ Sanity Test. -->
+
+
+                    <div class="columns is-centered is-gapless">
+                        <div class="column is-full-width">
+                            <h2 class="title is-3">Motion sequences from DeformingThings4D (D4D)</h2>
+                            <p>
+                                To show that our method works on animals, we train our method on motions from the DeformingThings4D dataset, which provides animal 4D meshes as deforming sequences and test it on unseen motion sequences.
+                            </p>
+                            <br>
+
+                            <div class="my-switcher">
+                                <!-- Tabs -->
+                                <div class="tabs is-boxed is-centered">
+                                    <ul>
+                                        <!-- First tab is active by default -->
+                                        <li class="is-active" data-tab="walk">
+                                            <a>Walk</a>
+                                        </li>
+                                        <li data-tab="attack">
+                                            <a>Attack</a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Walk Content -->
+                                <div class="content has-text-justified tab-content is-active" data-content="walk">
+                                    <div class="columns is-full-width is-gapless">
+                                        <div class="column is-centered">
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source src="./static/videos/d4d_walk.mp4" type="video/mp4" />
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Ensure the Walk tab-content closes here ^ -->
+
+                                <!-- Attack Content -->
+                                <div class="content has-text-justified tab-content" data-content="attack">
+                                    <div class="columns is-full-width is-gapless">
+                                        <div class="column is-centered">
+                                            <video autoplay controls muted loop disablepictureinpicture
+                                                controlslist="nodownload" playsinline>
+                                                <source src="./static/videos/d4d_attack.mp4" type="video/mp4" />
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- end tab-content for Attack -->
+                            </div>
+                            <!-- end my-switcher -->
+                        </div>
+                    </div>
+            
+                    <h2 class="title is-3">BibTeX</h2>
+                    <pre><code>
+    @misc{muralikrishnan2025smftemplatefreerigfreeanimation,
+        title={SMF: Template-free and Rig-free Animation Transfer using Kinetic Codes}, 
+        author={Sanjeev Muralikrishnan and Niladri Shekhar Dutt and Niloy J. Mitra},
+        year={2025},
+        eprint={2504.04831},
+        archivePrefix={arXiv},
+        primaryClass={cs.GR},
+        url={https://arxiv.org/abs/2504.04831}, 
+    }
+          </code></pre>
+
+
+            </section>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Select all .my-switcher containers
+                    const switchers = document.querySelectorAll('.my-switcher');
+
+                    switchers.forEach(switcher => {
+                        // For each switcher, find its tabs and contents
+                        const tabLinks = switcher.querySelectorAll('.tabs li');
+                        const tabContents = switcher.querySelectorAll('.tab-content');
+
+                        // Attach click events to each tab link
+                        tabLinks.forEach(link => {
+                            link.addEventListener('click', () => {
+                                // 1) Identify which content to show
+                                const targetName = link.getAttribute('data-tab');
+
+                                // 2) Deactivate all tabs in this switcher
+                                tabLinks.forEach(t => t.classList.remove('is-active'));
+                                // 3) Activate the clicked tab
+                                link.classList.add('is-active');
+
+                                // 4) Hide all tab-content in this switcher
+                                tabContents.forEach(tc => tc.classList.remove('is-active'));
+
+                                // 5) Find the matching content and show it
+                                const targetContent = switcher.querySelector(`[data-content="${targetName}"]`);
+                                if (targetContent) {
+                                    targetContent.classList.add('is-active');
+                                }
+                            });
+                        });
+                    });
+                });
+            </script>
+
 </body>
+
 </html>
